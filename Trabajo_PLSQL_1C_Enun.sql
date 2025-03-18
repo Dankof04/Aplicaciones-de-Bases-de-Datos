@@ -9,8 +9,6 @@ DROP SEQUENCE seq_pedidos;
 
 -- Creación de tablas y secuencias
 
-
-
 create sequence seq_pedidos;
 
 CREATE TABLE clientes (
@@ -58,7 +56,7 @@ create or replace procedure registrar_pedido(
     arg_id_primer_plato INTEGER DEFAULT NULL,
     arg_id_segundo_plato INTEGER DEFAULT NULL
 ) is 
-
+    -- DECLARACIÓN DE EXCEPCIONES
     plato_no_disponible EXCEPTION;
     PRAGMA EXCEPTION_INIT(plato_no_disponible, -20001);
     pedido_sin_plato EXCEPTION;
@@ -69,7 +67,42 @@ create or replace procedure registrar_pedido(
     PRAGMA EXCEPTION_INIT(plato_inexistente, -20004);
     
  begin
-  null; -- sustituye esta línea por tu código
+ 
+    --Comprobación de que el pedido contiene algún plato
+    IF arg_id_primer_plato IS NULL AND arg_id_segundo_plato IS NULL
+    THEN
+        raise_application_error(-20002, 'El pedido debe contener al menos un plato');
+    END IF;
+    
+    --En esta parte actualizo los pedidos del personal, lo bloqueo para escritura
+    SELECT pedidos_activos INTO v_numPedidos FROM personal_servicio
+    WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE;
+    --Si en esta parte viola la constraint saltara excepcion y la capturo en su bloque
+    UPDATE personal_servicio
+    SET pedidos_activos = v_numPedidos + 1
+    WHERE personal_servicio.id_personal=arg_id_personal;
+    
+    --Posteriormente actualizar total
+    INSERT INTO pedidos (id_pedido, id_cliente, id_personal)
+    VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal);
+    
+    --Hacer las inserciones en detalles pedido que saltaŕan las excepciones
+    --correspondientes si los platos no existen
+    --Además en el where poner la condición de si están disponibles, que
+    --también saltará excepción
+    
+    commit;
+    
+ exception   
+    when others then
+        IF SQLCODE=-2290 THEN
+            rollback;
+            raise_application_error(-20003, 'El personal de servicio tiene demasiados pedidos');
+        ELSE
+            rollback;
+            raise;
+        END IF;
+            
 end;
 /
 
@@ -96,8 +129,7 @@ begin
     'select ' || p_seq_name || '.nextval from dual' INTO l_val;
 
     execute immediate
-    'alter sequence ' || p_seq_name || ' increment by -' || l_val || 
-                                                          ' minvalue 0';
+    'alter sequence ' || p_seq_name || ' increment by -' || l_val || ' minvalue 0';
     execute immediate
     'select ' || p_seq_name || '.nextval from dual' INTO l_val;
 
