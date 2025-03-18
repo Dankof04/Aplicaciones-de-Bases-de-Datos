@@ -58,6 +58,16 @@ create or replace procedure registrar_pedido(
     arg_id_primer_plato INTEGER DEFAULT NULL,
     arg_id_segundo_plato INTEGER DEFAULT NULL
 ) is 
+
+    plato_no_disponible EXCEPTION;
+    PRAGMA EXCEPTION_INIT(plato_no_disponible, -20001);
+    pedido_sin_plato EXCEPTION;
+    PRAGMA EXCEPTION_INIT(pedido_sin_plato, -20002);
+    personal_sin_hueco_disponible EXCEPTION;
+    PRAGMA EXCEPTION_INIT(personal_sin_hueco_disponible, -20003);
+    plato_inexistente EXCEPTION;
+    PRAGMA EXCEPTION_INIT(plato_inexistente, -20004);
+    
  begin
   null; -- sustituye esta línea por tu código
 end;
