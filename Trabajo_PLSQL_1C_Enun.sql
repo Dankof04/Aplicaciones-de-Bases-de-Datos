@@ -66,6 +66,14 @@ create or replace procedure registrar_pedido(
     plato_inexistente EXCEPTION;
     PRAGMA EXCEPTION_INIT(plato_inexistente, -20004);
     
+    CURSOR c_plato_disp IS
+        SELECT disponible
+        FROM platos
+        WHERE id_plato IN (arg_id_primer_plato,arg_id_segundo_plato);
+    
+    precioTotal INTEGER;
+    cantidadPlato INTEGER;
+    
  begin
  
     --Comprobación de que el pedido contiene algún plato
@@ -73,12 +81,6 @@ create or replace procedure registrar_pedido(
     THEN
         raise_application_error(-20002, 'El pedido debe contener al menos un plato');
     END IF;
-    
-    CURSOR vPlatoDisponible IS 
-        SELECT disponible
-        FROM platos
-        WHERE di_plato IN (arg_id_primer_plato,arg_id_segundo_plat);
-    
     
     --En esta parte actualizo los pedidos del personal, lo bloqueo para escritura
     SELECT pedidos_activos INTO v_numPedidos FROM personal_servicio
@@ -89,7 +91,7 @@ create or replace procedure registrar_pedido(
     SET pedidos_activos = v_numPedidos + 1
     WHERE personal_servicio.id_personal=arg_id_personal;
     
-    --Posteriormente actualizar total
+     
     INSERT INTO pedidos (id_pedido, id_cliente, id_personal)
     VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal);
     
