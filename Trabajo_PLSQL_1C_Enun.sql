@@ -74,9 +74,16 @@ create or replace procedure registrar_pedido(
         raise_application_error(-20002, 'El pedido debe contener al menos un plato');
     END IF;
     
+    CURSOR vPlatoDisponible IS 
+        SELECT disponible
+        FROM platos
+        WHERE di_plato IN (arg_id_primer_plato,arg_id_segundo_plat);
+    
+    
     --En esta parte actualizo los pedidos del personal, lo bloqueo para escritura
     SELECT pedidos_activos INTO v_numPedidos FROM personal_servicio
     WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE;
+    
     --Si en esta parte viola la constraint saltara excepcion y la capturo en su bloque
     UPDATE personal_servicio
     SET pedidos_activos = v_numPedidos + 1
@@ -85,6 +92,10 @@ create or replace procedure registrar_pedido(
     --Posteriormente actualizar total
     INSERT INTO pedidos (id_pedido, id_cliente, id_personal)
     VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal);
+    
+    INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
+    VALUES 
+    
     
     --Hacer las inserciones en detalles pedido que saltaŕan las excepciones
     --correspondientes si los platos no existen
