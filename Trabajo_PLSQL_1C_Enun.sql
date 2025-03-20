@@ -9,6 +9,8 @@ DROP SEQUENCE seq_pedidos;
 
 -- Creación de tablas y secuencias
 
+
+
 create sequence seq_pedidos;
 
 CREATE TABLE clientes (
@@ -29,7 +31,7 @@ CREATE TABLE platos (
     id_plato INTEGER PRIMARY KEY,
     nombre VARCHAR2(100) NOT NULL,
     precio DECIMAL(10, 2) NOT NULL,
-    disponible BOOLEAN DEFAULT TRUE
+    disponible INTEGER DEFAULT 1 CHECK (DISPONIBLE in (0,1))
 );
 
 CREATE TABLE pedidos (
@@ -122,7 +124,7 @@ end;
 ------ Deja aquí tus respuestas a las preguntas del enunciado:
 -- NO SE CORREGIRÁN RESPUESTAS QUE NO ESTÉN AQUÍ (utiliza el espacio que necesites apra cada una)
 -- * P4.1
--- PRUEBITA SCRIPTITO
+--
 -- * P4.2
 --
 -- * P4.3
@@ -142,7 +144,8 @@ begin
     'select ' || p_seq_name || '.nextval from dual' INTO l_val;
 
     execute immediate
-    'alter sequence ' || p_seq_name || ' increment by -' || l_val || ' minvalue 0';
+    'alter sequence ' || p_seq_name || ' increment by -' || l_val || 
+                                                          ' minvalue 0';
     execute immediate
     'select ' || p_seq_name || '.nextval from dual' INTO l_val;
 
@@ -172,9 +175,9 @@ begin
     insert into Personal_servicio (id_personal, nombre, apellido, pedidos_activos) values (1, 'Carlos', 'Lopez', 0);
     insert into Personal_servicio (id_personal, nombre, apellido, pedidos_activos) values (2, 'Maria', 'Fernandez', 5);
     
-    insert into Platos (id_plato, nombre, precio, disponible) values (1, 'Sopa', 10.0, TRUE);
-    insert into Platos (id_plato, nombre, precio, disponible) values (2, 'Pasta', 12.0, TRUE);
-    insert into Platos (id_plato, nombre, precio, disponible) values (3, 'Carne', 15.0, FALSE);
+    insert into Platos (id_plato, nombre, precio, disponible) values (1, 'Sopa', 10.0, 1);
+    insert into Platos (id_plato, nombre, precio, disponible) values (2, 'Pasta', 12.0, 1);
+    insert into Platos (id_plato, nombre, precio, disponible) values (3, 'Carne', 15.0, 0);
 
     commit;
 end;
