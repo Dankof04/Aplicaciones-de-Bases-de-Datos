@@ -68,22 +68,44 @@ create or replace procedure registrar_pedido(
     plato_inexistente EXCEPTION;
     PRAGMA EXCEPTION_INIT(plato_inexistente, -20004);
     
-    CURSOR c_plato_disp IS
-        SELECT disponible
+    CURSOR c_plato (v_id_plato INTEGER) IS
+        SELECT id_plato,precio,disponible
         FROM platos
-        WHERE id_plato IN (arg_id_primer_plato,arg_id_segundo_plato);
+        WHERE id_plato = v_id_plato;
     
+    idPlato INTEGER;
+    precioPlato DECIMAL;
+    disponibilidad INTEGER;
     precioTotal INTEGER;
     cantidadPlato INTEGER;
-    
+
  begin
- 
+    --Inicializo la variable del precio total del pedido y la cantidad de cada plato
+    precioTotal:=0;
+    cantidadPlato:=1;
+    
     --Comprobación de que el pedido contiene algún plato
     IF arg_id_primer_plato IS NULL AND arg_id_segundo_plato IS NULL
     THEN
         raise_application_error(-20002, 'El pedido debe contener al menos un plato');
     END IF;
     
+    IF arg_id_primer_plato IS NOT NULL
+    THEN
+        OPEN c_plato(arg_id_primer_plato);
+        FETCH c_plato INTO precioPlato,disponibilidad;
+        IF c_plato%NOTFOUND THEN
+            raise_application_error(-20004, 'El primer plato seleccionado no existe');
+        ELSIF disponibilidad = 0 THEN
+            raise_application_error(-20001, 'Uno de los platos seleccionados no esta disponible');
+        END IF;
+        precioTotal:=precioTotal+precioPlato;
+    END IF;
+    
+    --si los dos platos son iguales, modifico solo variables, sino, si el segundo
+    --plato no es null, hago lo mismo q en el primero
+        
+        
     --En esta parte actualizo los pedidos del personal, lo bloqueo para escritura
     SELECT pedidos_activos INTO v_numPedidos FROM personal_servicio
     WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE;
