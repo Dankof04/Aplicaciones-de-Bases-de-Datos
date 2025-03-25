@@ -92,6 +92,7 @@ create or replace procedure registrar_pedido(
         raise_application_error(-20002, 'El pedido debe contener al menos un plato');
     END IF;
     
+    --Realizo las comprobaciones para el primer plato
     IF arg_id_primer_plato IS NOT NULL
     THEN
         OPEN c_plato(arg_id_primer_plato);
@@ -103,6 +104,19 @@ create or replace procedure registrar_pedido(
         END IF;
         v_precioTotal:=v_precioTotal+v_precioPlato;
     END IF;
+    
+    --Si el primer plato es correcto y los dos ids son iguales(mismo plato)
+    IF arg_id_primer_plato = arg_id_segundo_plato THEN
+        v_precioTotal:=v_precioTotal+v_precioPlato;
+        v_cantidadPlato:=2;
+        
+    --Sino realizo las comprobaciones para el segundo plato
+    ELSE IF arg_id_segundo_plato IS NOT NULL
+    THEN
+        OPEN c_plato(arg_id_segundo_plato);
+        FETCH c_plato INTO v_precioPlato,v_disponibilidad;
+    END IF;
+        
     
     --si los dos platos son iguales, modifico solo variables, sino, si el segundo
     --plato no es null, hago lo mismo q en el primero
