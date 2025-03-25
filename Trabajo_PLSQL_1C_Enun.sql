@@ -69,20 +69,22 @@ create or replace procedure registrar_pedido(
     PRAGMA EXCEPTION_INIT(plato_inexistente, -20004);
     
     CURSOR c_plato (v_id_plato INTEGER) IS
-        SELECT id_plato,precio,disponible
+        SELECT precio,disponible
         FROM platos
         WHERE id_plato = v_id_plato;
     
-    idPlato INTEGER;
-    precioPlato DECIMAL;
-    disponibilidad INTEGER;
-    precioTotal INTEGER;
-    cantidadPlato INTEGER;
+    
+    v_precioPlato DECIMAL(10, 2);
+    v_disponibilidad INTEGER;
+    v_precioTotal DECIMAL(10, 2);
+    v_cantidadPlato INTEGER;
+    v_numPedidos INTEGER;
+    
 
  begin
     --Inicializo la variable del precio total del pedido y la cantidad de cada plato
-    precioTotal:=0;
-    cantidadPlato:=1;
+    v_precioTotal:=0;
+    v_cantidadPlato:=1;
     
     --Comprobación de que el pedido contiene algún plato
     IF arg_id_primer_plato IS NULL AND arg_id_segundo_plato IS NULL
@@ -93,13 +95,13 @@ create or replace procedure registrar_pedido(
     IF arg_id_primer_plato IS NOT NULL
     THEN
         OPEN c_plato(arg_id_primer_plato);
-        FETCH c_plato INTO precioPlato,disponibilidad;
+        FETCH c_plato INTO v_precioPlato,v_disponibilidad;
         IF c_plato%NOTFOUND THEN
             raise_application_error(-20004, 'El primer plato seleccionado no existe');
-        ELSIF disponibilidad = 0 THEN
+        ELSIF v_disponibilidad = 0 THEN
             raise_application_error(-20001, 'Uno de los platos seleccionados no esta disponible');
         END IF;
-        precioTotal:=precioTotal+precioPlato;
+        v_precioTotal:=v_precioTotal+v_precioPlato;
     END IF;
     
     --si los dos platos son iguales, modifico solo variables, sino, si el segundo
@@ -119,8 +121,8 @@ create or replace procedure registrar_pedido(
     INSERT INTO pedidos (id_pedido, id_cliente, id_personal)
     VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal);
     
-    INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
-    VALUES 
+    --INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
+    --VALUES 
     
     
     --Hacer las inserciones en detalles pedido que saltaŕan las excepciones
