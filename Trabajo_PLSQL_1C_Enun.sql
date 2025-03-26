@@ -146,10 +146,16 @@ create or replace procedure registrar_pedido(
     VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal, v_precioTotal);
     
     --Inserto los detallles del pedido en la tabla correspondiente
+    --Si el valor de cantidadPlato es 2, significa que se han introducido
+    --dos platos iguales, por lo tanto hacemos una sola inserción
     IF v_cantidadPlato=2 THEN
         INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
         VALUES (seq_pedidos.currval,arg_id_primer_plato,2);
+    -- Si no, significa que por lo menos realizaremos una insercion de un
+    --solo plato, pero pueden ser dos.
     ELSE
+    --Aquí se inserta cada plato, ya que si este no es null y se ha llegado
+    --hasta este punto, esque existe y está disponible.
         IF arg_id_primer_plato IS NOT NULL
         THEN
             INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
@@ -162,9 +168,14 @@ create or replace procedure registrar_pedido(
             VALUES (seq_pedidos.currval,arg_id_segundo_plato,1);
         END IF;
     END IF;
-    
+    --Comiteamos al final del procedimiento (atomicidad) si ha llegado
+    --hasta este punto.
     commit;
     
+    --Capturamos la excepción que salta si violamos el check de la tabla
+    --de personal-servicio y lo transformamos en la excepción que queremos
+    --Cualquier otra excepción se propaga
+    --En cualquier caso haríamos un rollback ya que ha habido un error
  exception   
     when others then
         IF SQLCODE=-2290 THEN
@@ -243,28 +254,27 @@ end;
 exec inicializa_test;
 
 -- Completa lost test, incluyendo al menos los del enunciado y añadiendo los que consideres necesarios
-
+--cliente, personal, platos
 create or replace procedure test_registrar_pedido is
 begin
 	 
-  --caso 1 Pedido correct, se realiza
+  -- Caso 1: El pedido se realiza correctamente
   begin
     inicializa_test;
-    dbms_output.put_line(CHR(10)||'Caso 1: Realización de un pedido correcto');
+    dbms_output.put_line(CHR(10)||'Caso 1: Registro de un pedido correcto');
     registrar_pedido(1,1,1,2);
-     dbms_output.put_line('BIEN: El pedido se realiza correctamente');
- exception   
+    dbms_output.put_line('BIEN: El pedido se realiza correctamente');
+  exception   
     when others then
         dbms_output.put_line('MAL: El pedido no se realiza correctamente');
-    
   end;
   
 
- -- Caso 2: Si se realiza un pedido vac´ıo (sin platos) devuelve el error -20002.
-    begin
+  -- Caso 2: Si se realiza un pedido vacio (sin platos) devuelve el error -20002.
+  begin
     dbms_output.put_line(CHR(10)||'Caso 2: Realización de un pedido vacio');
     registrar_pedido( 1, 1, NULL, NULL);    
-    dbms_output.put_line('MAL: No da error al realizar un pedido vacio.');
+    dbms_output.put_line('MAL: No da error al realizar un pedido vacio');
     rollback;
   exception
     when others then
@@ -277,9 +287,10 @@ begin
         dbms_output.put_line('Error nro '||SQLCODE);
         dbms_output.put_line('Mensaje '||SQLERRM);
       end if;
-  end;   
+  end; 
+  
     
- --Caso 3. Si se realiza un pedido con un plato que no existe devuelve en error -20004.
+  -- Caso 3: Si se realiza un pedido con un plato que no existe devuelve en error -20004.
   begin
     dbms_output.put_line(CHR(10)||'Caso 3: Realización de un pedido con un plato inexistente');
     registrar_pedido( 1, 1, 4, 5);    
@@ -298,11 +309,12 @@ begin
       end if;
   end;
   
-  --Caso 4:Si se realiza un pedido que incluye un plato que no est´a ya disponible devuelve el error -20001.
+  
+  -- Caso 4: Si se realiza un pedido que incluye un plato que no esta ya disponible devuelve el error -20001.
   begin
-    dbms_output.put_line(CHR(10)||'Caso 4: Realización de un pedido con un plato ya no disponible');
+    dbms_output.put_line(CHR(10)||'Caso 4: Realización de un pedido con un plato no disponible');
     registrar_pedido( 1, 1, 2, 3);    
-    dbms_output.put_line('MAL: No da error al realizar un pedido con un plato ya no disponible.');
+    dbms_output.put_line('MAL: No da error al realizar un pedido con un plato no disponible.');
     rollback;
   exception
     when others then
@@ -311,21 +323,22 @@ begin
         dbms_output.put_line('Error nro '||SQLCODE);
         dbms_output.put_line('Mensaje '||SQLERRM);
       else
-        dbms_output.put_line('MAL: Da error pero no detecta pedido con plato ya no disponible.');
+        dbms_output.put_line('MAL: Da error pero no detecta pedido con plato no disponible.');
         dbms_output.put_line('Error nro '||SQLCODE);
         dbms_output.put_line('Mensaje '||SQLERRM);
       end if;
   end;
   
-  --Caso 5: -- Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
-    begin
-    dbms_output.put_line(CHR(10)||'Caso 5: Realización de un pedido a un trabajador que ya tiene 5 pedidos');
-    registrar_pedido( 1, 1, 2, 3);    
-    dbms_output.put_line('MAL: No da error al realizar un pedido a un trabajador que ya tiene 5 pedidos.');
+  
+  -- Caso 5: Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
+  begin
+    dbms_output.put_line(CHR(10)||'Caso 5: Encargo de un pedido a un trabajador que ya tiene 5 pedidos');
+    registrar_pedido( 1, 2, 1, 2);    
+    dbms_output.put_line('MAL: No da error encargar un pedido a un trabajador que ya tiene 5 pedidos');
     rollback;
-    exception
+  exception
     when others then
-      if SQLCODE = -20001 then
+      if SQLCODE = -20003 then
         dbms_output.put_line('BIEN: Detecta que el trabajador ya tiene el maximo de pedidos.');
         dbms_output.put_line('Error nro '||SQLCODE);
         dbms_output.put_line('Mensaje '||SQLERRM);
@@ -334,7 +347,7 @@ begin
         dbms_output.put_line('Error nro '||SQLCODE);
         dbms_output.put_line('Mensaje '||SQLERRM);
       end if;
-    end;
+  end;
 end;
 /
 
