@@ -58,6 +58,7 @@ create or replace procedure registrar_pedido(
     arg_id_primer_plato INTEGER DEFAULT NULL,
     arg_id_segundo_plato INTEGER DEFAULT NULL
 ) is 
+
     -- DECLARACIÓN DE EXCEPCIONES
     plato_no_disponible EXCEPTION;
     PRAGMA EXCEPTION_INIT(plato_no_disponible, -20001);
@@ -114,7 +115,7 @@ create or replace procedure registrar_pedido(
         v_cantidadPlato:=2;
         
     --Sino realizo las comprobaciones para el segundo plato
-    ELSE IF arg_id_segundo_plato IS NOT NULL
+    ELSIF arg_id_segundo_plato IS NOT NULL
     THEN
         OPEN c_plato(arg_id_segundo_plato);
         FETCH c_plato INTO v_precioPlato,v_disponibilidad;
@@ -145,9 +146,22 @@ create or replace procedure registrar_pedido(
     VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal, v_precioTotal);
     
     --Inserto los detallles del pedido en la tabla correspondiente
-    --INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
-    --VALUES 
-    
+    IF v_cantidadPlato=2 THEN
+        INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
+        VALUES (seq_pedidos.currval,arg_id_primer_plato,2);
+    ELSE
+        IF arg_id_primer_plato IS NOT NULL
+        THEN
+            INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
+            VALUES (seq_pedidos.currval,arg_id_primer_plato,1);
+        END IF;
+        
+        IF arg_id_segundo_plato IS NOT NULL
+        THEN
+            INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
+            VALUES (seq_pedidos.currval,arg_id_segundo_plato,1);
+        END IF;
+    END IF;
     
     commit;
     
