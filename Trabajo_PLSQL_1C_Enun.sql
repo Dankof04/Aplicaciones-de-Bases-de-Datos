@@ -250,7 +250,7 @@ begin
   --caso 1 Pedido correct, se realiza
   begin
     inicializa_test;
-    registrar_pedido(1,1,1,2);
+    registra_pedido(1,1,1,2);
      dbms_output.put_line('Caso 1: Correcto');
 
         
