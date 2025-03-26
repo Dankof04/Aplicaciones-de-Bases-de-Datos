@@ -68,12 +68,13 @@ create or replace procedure registrar_pedido(
     plato_inexistente EXCEPTION;
     PRAGMA EXCEPTION_INIT(plato_inexistente, -20004);
     
+    --DECLARACIÓN DEL CURSOR
     CURSOR c_plato (v_id_plato INTEGER) IS
         SELECT precio,disponible
         FROM platos
         WHERE id_plato = v_id_plato;
     
-    
+    --DECLARACIÓN DE VARIABLES
     v_precioPlato DECIMAL(10, 2);
     v_disponibilidad INTEGER;
     v_precioTotal DECIMAL(10, 2);
@@ -103,9 +104,11 @@ create or replace procedure registrar_pedido(
             raise_application_error(-20001, 'Uno de los platos seleccionados no esta disponible');
         END IF;
         v_precioTotal:=v_precioTotal+v_precioPlato;
+        CLOSE c_plato;
     END IF;
     
     --Si el primer plato es correcto y los dos ids son iguales(mismo plato)
+    --Modifico solo dos variables y me ahorro mas comprobación de excepciones
     IF arg_id_primer_plato = arg_id_segundo_plato THEN
         v_precioTotal:=v_precioTotal+v_precioPlato;
         v_cantidadPlato:=2;
@@ -115,34 +118,36 @@ create or replace procedure registrar_pedido(
     THEN
         OPEN c_plato(arg_id_segundo_plato);
         FETCH c_plato INTO v_precioPlato,v_disponibilidad;
+        IF c_plato%NOTFOUND THEN
+            raise_application_error(-20004, 'El segundo plato seleccionado no existe');
+        ELSIF v_disponibilidad = 0 THEN
+            raise_application_error(-20001, 'Uno de los platos seleccionados no esta disponible');
+        END IF;
+        v_precioTotal:=v_precioTotal+v_precioPlato;
+        CLOSE c_plato;
     END IF;
         
-    
-    --si los dos platos son iguales, modifico solo variables, sino, si el segundo
-    --plato no es null, hago lo mismo q en el primero
         
-        
+    --Si hemos llegado aquí es que los platos existen y están disponibles.    
     --En esta parte actualizo los pedidos del personal, lo bloqueo para escritura
+    --Gracias al bloqueo evito que otra transacción modifique el dato hasta que yo finalice
     SELECT pedidos_activos INTO v_numPedidos FROM personal_servicio
     WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE;
     
     --Si en esta parte viola la constraint saltara excepcion y la capturo en su bloque
+    --Esta es la ultima excepción que podría saltar en el proceso
     UPDATE personal_servicio
     SET pedidos_activos = v_numPedidos + 1
     WHERE personal_servicio.id_personal=arg_id_personal;
     
-     
-    INSERT INTO pedidos (id_pedido, id_cliente, id_personal)
-    VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal);
+    --Inserto el pedido en la tabla de pedidos
+    INSERT INTO pedidos (id_pedido, id_cliente, id_personal,total)
+    VALUES (seq_pedidos.nextval, arg_id_cliente, arg_id_personal, v_precioTotal);
     
+    --Inserto los detallles del pedido en la tabla correspondiente
     --INSERT INTO detalle_pedido (id_pedido, id_plato, cantidad)
     --VALUES 
     
-    
-    --Hacer las inserciones en detalles pedido que saltaŕan las excepciones
-    --correspondientes si los platos no existen
-    --Además en el where poner la condición de si están disponibles, que
-    --también saltará excepción
     
     commit;
     
