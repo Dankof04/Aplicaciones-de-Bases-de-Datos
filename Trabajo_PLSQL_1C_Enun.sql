@@ -200,7 +200,11 @@ end;
 -- * P4.3
 --
 -- * P4.4
---
+-- Al tener puesto un check de pedidos <= 5, si en algun momento se viola este check saltará la excepcion con
+-- error -2290, que luego nosotrs relanzamos con el codigo -20003. 
+-- En caso de que salte la excepcion al estar implicita en la base de datos, esta rechazará la transaccion automaticamente.
+-- Se podría mejorar la situación si comprobaramos tambien si el trabajador ha llegado al maximo de pedidos antes de realizar
+-- el update así no bloqueariamos la base para escritura de forma innecesaria.
 -- * P4.5
 -- 
 
