@@ -300,8 +300,8 @@ begin
   
   --Caso 4:Si se realiza un pedido que incluye un plato que no est´a ya disponible devuelve el error -20001.
   begin
-    dbms_output.put_line('Caso 4: Realización de un pedido con un plato ya no disponible');
-    registra_pedido( 1, 1, 2, 3);    
+    dbms_output.put_line(CHR(10)||'Caso 4: Realización de un pedido con un plato ya no disponible');
+    registrar_pedido( 1, 1, 2, 3);    
     dbms_output.put_line('MAL: No da error al realizar un pedido con un plato ya no disponible.');
     rollback;
   exception
@@ -318,7 +318,23 @@ begin
   end;
   
   --Caso 5: -- Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
-  
+    begin
+    dbms_output.put_line(CHR(10)||'Caso 5: Realización de un pedido a un trabajador que ya tiene 5 pedidos');
+    registrar_pedido( 1, 1, 2, 3);    
+    dbms_output.put_line('MAL: No da error al realizar un pedido a un trabajador que ya tiene 5 pedidos.');
+    rollback;
+    exception
+    when others then
+      if SQLCODE = -20001 then
+        dbms_output.put_line('BIEN: Detecta que el trabajador ya tiene el maximo de pedidos.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      else
+        dbms_output.put_line('MAL: Da error pero no detecta que el trabajador ya tiene el maximo de pedidos.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      end if;
+    end;
 end;
 /
 
