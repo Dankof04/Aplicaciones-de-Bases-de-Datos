@@ -250,24 +250,41 @@ begin
   --caso 1 Pedido correct, se realiza
   begin
     inicializa_test;
+    dbms_output.put_line(CHR(10)||'Caso 1: Realización de un pedido correcto');
     registrar_pedido(1,1,1,2);
-     dbms_output.put_line('Caso 1: Correcto');
+     dbms_output.put_line('Bien: El pedido se realiza correctamente');
 
         
  exception   
     when others then
-        dbms_output.put_line('Caso 1: Error');
+        dbms_output.put_line('MAL: El pedido no se realiza correctamente');
     
   end;
   
 
- -- Caso 2: Si se realiza un pedido vac´ıo (sin platos) devuelve el error -200002.
-     
+ -- Caso 2: Si se realiza un pedido vac´ıo (sin platos) devuelve el error -20002.
+    begin
+    dbms_output.put_line(CHR(10)||'Caso 2: Realización de un pedido vacio');
+    registrar_pedido( 1, 1, NULL, NULL);    
+    dbms_output.put_line('MAL: No da error al realizar un pedido vacio.');
+    rollback;
+  exception
+    when others then
+      if SQLCODE = -20002 then
+        dbms_output.put_line('BIEN: Detecta pedido sin platos.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      else
+        dbms_output.put_line('MAL: Da error pero no detecta pedido sin platos.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      end if;
+  end;   
     
  --Caso 3. Si se realiza un pedido con un plato que no existe devuelve en error -20004.
   begin
-    dbms_output.put_line('Test 3: Realización de un pedido con un plato inexistente');
-    registra_pedido( 1, 1, 4, 5);    
+    dbms_output.put_line(CHR(10)||'Caso 3: Realización de un pedido con un plato inexistente');
+    registrar_pedido( 1, 1, 4, 5);    
     dbms_output.put_line('MAL: No da error al realizar un pedido con un plato inexistente.');
     rollback;
   exception
