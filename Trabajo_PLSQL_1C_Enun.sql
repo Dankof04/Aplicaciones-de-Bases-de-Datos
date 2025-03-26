@@ -260,6 +260,24 @@ begin
      - Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
      - ... los que os puedan ocurrir que puedan ser necesarios para comprobar el correcto funcionamiento del procedimiento
 */
+
+  begin
+    dbms_output.put_line('Test 3: Realización de un pedido con un plato inexistente');
+    registra_pedido( 1, 1, 4, 5);    
+    dbms_output.put_line('MAL: No da error al realizar un pedido con un plato inexistente.');
+    rollback;
+  exception
+    when others then
+      if SQLCODE = -20004 then
+        dbms_output.put_line('BIEN: Detecta pedido con plato inexistente.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      else
+        dbms_output.put_line('MAL: Da error pero no detecta pedido con plato inexistente.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      end if;
+  end;
   
 end;
 /
