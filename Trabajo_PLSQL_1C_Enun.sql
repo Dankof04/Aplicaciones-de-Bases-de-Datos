@@ -250,16 +250,9 @@ begin
   --caso 1 Pedido correct, se realiza
   begin
     inicializa_test;
-<<<<<<< HEAD
     dbms_output.put_line(CHR(10)||'Caso 1: Realización de un pedido correcto');
     registrar_pedido(1,1,1,2);
-     dbms_output.put_line('Bien: El pedido se realiza correctamente');
-=======
-    registra_pedido(1,1,1,2);
-     dbms_output.put_line('Caso 1: Correcto');
->>>>>>> ff9b2b44fb8f520553ee08aef5f76d472e0349d0
-
-        
+     dbms_output.put_line('BIEN: El pedido se realiza correctamente');
  exception   
     when others then
         dbms_output.put_line('MAL: El pedido no se realiza correctamente');
@@ -306,6 +299,23 @@ begin
   end;
   
   --Caso 4:Si se realiza un pedido que incluye un plato que no est´a ya disponible devuelve el error -20001.
+  begin
+    dbms_output.put_line('Caso 4: Realización de un pedido con un plato ya no disponible');
+    registra_pedido( 1, 1, 2, 3);    
+    dbms_output.put_line('MAL: No da error al realizar un pedido con un plato ya no disponible.');
+    rollback;
+  exception
+    when others then
+      if SQLCODE = -20001 then
+        dbms_output.put_line('BIEN: Detecta pedido con plato ya no disponible.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      else
+        dbms_output.put_line('MAL: Da error pero no detecta pedido con plato ya no disponible.');
+        dbms_output.put_line('Error nro '||SQLCODE);
+        dbms_output.put_line('Mensaje '||SQLERRM);
+      end if;
+  end;
   
   --Caso 5: -- Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
   
