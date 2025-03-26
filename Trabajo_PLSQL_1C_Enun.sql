@@ -250,17 +250,21 @@ begin
   --caso 1 Pedido correct, se realiza
   begin
     inicializa_test;
+    registrar_pedido(1,1,1,2);
+     dbms_output.put_line('Caso 1: Correcto');
+
+        
+ exception   
+    when others then
+        dbms_output.put_line('Caso 1: Error');
+    
   end;
   
-  -- Idem para el resto de casos
 
-  /* - Si se realiza un pedido vac´ıo (sin platos) devuelve el error -200002.
-     - Si se realiza un pedido con un plato que no existe devuelve en error -20004.
-     - Si se realiza un pedido que incluye un plato que no est´a ya disponible devuelve el error -20001.
-     - Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
-     - ... los que os puedan ocurrir que puedan ser necesarios para comprobar el correcto funcionamiento del procedimiento
-*/
-
+ -- Caso 2: Si se realiza un pedido vac´ıo (sin platos) devuelve el error -200002.
+     
+    
+ --Caso 3. Si se realiza un pedido con un plato que no existe devuelve en error -20004.
   begin
     dbms_output.put_line('Test 3: Realización de un pedido con un plato inexistente');
     registra_pedido( 1, 1, 4, 5);    
@@ -278,6 +282,10 @@ begin
         dbms_output.put_line('Mensaje '||SQLERRM);
       end if;
   end;
+  
+  --Caso 4:Si se realiza un pedido que incluye un plato que no est´a ya disponible devuelve el error -20001.
+  
+  --Caso 5: -- Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
   
 end;
 /
