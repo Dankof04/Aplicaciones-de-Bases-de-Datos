@@ -250,9 +250,14 @@ begin
   --caso 1 Pedido correct, se realiza
   begin
     inicializa_test;
+<<<<<<< HEAD
     dbms_output.put_line(CHR(10)||'Caso 1: Realización de un pedido correcto');
     registrar_pedido(1,1,1,2);
      dbms_output.put_line('Bien: El pedido se realiza correctamente');
+=======
+    registra_pedido(1,1,1,2);
+     dbms_output.put_line('Caso 1: Correcto');
+>>>>>>> ff9b2b44fb8f520553ee08aef5f76d472e0349d0
 
         
  exception   
