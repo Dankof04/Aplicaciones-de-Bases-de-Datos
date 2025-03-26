@@ -192,7 +192,9 @@ end;
 ------ Deja aquí tus respuestas a las preguntas del enunciado:
 -- NO SE CORREGIRÁN RESPUESTAS QUE NO ESTÉN AQUÍ (utiliza el espacio que necesites apra cada una)
 -- * P4.1
---
+-- Una vez se verifica que los platos existen y están disponibles, se bloquea la transaccion para escritura
+-- por lo que no se pueden completar las dos transacciones a la vez, la segunda tendrá que esperar a que termine
+-- la primera para poder hacer la comprobacion de pedidos maximos del trabajador.
 -- * P4.2
 --
 -- * P4.3
