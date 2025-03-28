@@ -189,24 +189,55 @@ create or replace procedure registrar_pedido(
 end;
 /
 
------- Deja aquí tus respuestas a las preguntas del enunciado:
--- NO SE CORREGIRÁN RESPUESTAS QUE NO ESTÉN AQUÍ (utiliza el espacio que necesites apra cada una)
--- * P4.1
--- Una vez se verifica que los platos existen y están disponibles, se bloquea la transaccion para escritura
--- por lo que no se pueden completar las dos transacciones a la vez, la segunda tendrá que esperar a que termine
--- la primera para poder hacer la comprobacion de pedidos maximos del trabajador.
--- * P4.2
---
--- * P4.3
---
--- * P4.4
--- Al tener puesto un check de pedidos <= 5, si en algun momento se viola este check saltará la excepcion con
--- error -2290, que luego nosotrs relanzamos con el codigo -20003. 
--- En caso de que salte la excepcion al estar implicita en la base de datos, esta rechazará la transaccion automaticamente.
--- Se podría mejorar la situación si comprobaramos tambien si el trabajador ha llegado al maximo de pedidos antes de realizar
--- el update así no bloqueariamos la base para escritura de forma innecesaria.
--- * P4.5
--- 
+  /*
+   * RESPUESTAS A LAS CUESTIONES PLANTEADAS
+   *
+   * P4.1 -----------------------------------------------------------------------------------------------------
+   * Una vez se verifica que los platos existen y están disponibles, se selecciona el campo personal_pedidos
+   * bloqueandolo para escritura (FOR UPDATE). De esta forma, si otra transacción concurrente intenta realizar
+   * el procedimiento de reserva, se verá obligada a modificar dicho campo. Como esta bloqueado tendrá que 
+   * esperar a que la primera termine. A su vez la primera para poder hacer la comprobacion de pedidos maximos 
+   * del trabajador gracias al check que posee dicho campo sin interferencias con otras transacciones.
+   *
+   * P4.2 -----------------------------------------------------------------------------------------------------
+   *
+   *
+   * P4.3 -----------------------------------------------------------------------------------------------------
+   *
+   *
+   * P4.4 -----------------------------------------------------------------------------------------------------
+   * El hipotético check por el que se nos pregunta, ya estaba incluido en la correspondiente tabla a la hora de 
+   * descargarnos este fichero. Por ello lo hemos empleado para la resolución de nuestro procedimiento.
+   *
+   * Al tener puesto un check de pedidos <= 5, si en algun momento se viola este check saltará la excepcion con
+   * error -02290, que luego nosotros capturamos en el bloque de excepciones y relanzamos con el codigo -20003. 
+   * En caso de que salte la excepcion al al capturarse en el bloque de excepciones se realizará un rollback y 
+   * se propagará. 
+   *
+   * Gracias al rollback no se guardarán modificaciones incorrectas o incompletas y la base quedará 
+   * en un estado consistente. La excepción nos permitirá saber cual ha sido el error que se produjo durante la 
+   * realización del pedido. El hecho de haber bloqueado el campo para escritura al hacer la select, permite que 
+   * no haya incongruencias entre diversos usuarios a la hora de la realización del check.
+   *
+   *
+   * P4.5 -------------------------------------------------------------------------------------------------------
+   * Se ha empleado una estrategia de programación estructurada y modular. Se han incluido mecanismos de control 
+   * de errores (empleando el tratamiento de excepciones) y de la transaccionalidad.
+   *
+   * Empleamos programación estructurada ya que el ćodigo se organiza en bloques lógicos (validamos las entradas,
+   * comprobamos existencia y disponibilidad, actualización e inserción) y permite una ejecución por pasos.
+   *
+   * Encapsulamos toda la lógica en un único procedimiento que favorece su reutilización, aportando modularidad.
+   *
+   * Gracias al manejo de excepciones podemos controlar en todo momento lo que pasa durante la ejecución del
+   * procedimiento. Nos permite informar sobre cualquier tipo de error que ocurra y modificar la actuación
+   * del procedimiento (control) dependiendo de dichos sucesos.
+   *
+   * Manejamos la transaccionalidad gracias al empleo de commit al final del procedimiento (que se ejecutará si 
+   * no ha ocurrido ninǵun problema) aportando atomicidad a las operaciones realizadas. Si embargo si se produce
+   * algún error, siempre se ejecutará un rollback para mantener la integridad de la base de datos.
+   * También empleamos FOR UPDATE para evitar problemas relacionados con las transacciones concurrentes.
+   */
 
 
 create or replace
