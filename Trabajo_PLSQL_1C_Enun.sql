@@ -193,14 +193,19 @@ end;
    * RESPUESTAS A LAS CUESTIONES PLANTEADAS
    *
    * P4.1 -----------------------------------------------------------------------------------------------------
+   * Contamos con un check en el cual comprobamos que el valor de pedidos activos para cada miembro del personal
+   * sea siempre menor o igual que 5, eliminando la posibilidad de superar este valor.
+   * Además, contamos con un test específico en el cuál verificamos el comportamiento del código para un caso en
+   * el que un trabajador con ya 5 pedidos activos trata de incluir un sexto pedido, resultando en la correcta
+   * ejecución de dicho test si no se produjera la inserción, avisando en el acto, o advirtiendo de la misma si 
+   * llegara a producirse
+   *
+   * P4.2 -----------------------------------------------------------------------------------------------------
    * Una vez se verifica que los platos existen y están disponibles, se selecciona el campo personal_pedidos
    * bloqueandolo para escritura (FOR UPDATE). De esta forma, si otra transacción concurrente intenta realizar
    * el procedimiento de reserva, se verá obligada a modificar dicho campo. Como esta bloqueado tendrá que 
    * esperar a que la primera termine. A su vez la primera para poder hacer la comprobacion de pedidos maximos 
    * del trabajador gracias al check que posee dicho campo sin interferencias con otras transacciones.
-   *
-   * P4.2 -----------------------------------------------------------------------------------------------------
-   *
    *
    * P4.3 -----------------------------------------------------------------------------------------------------
    *
