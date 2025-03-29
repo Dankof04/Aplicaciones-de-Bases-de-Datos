@@ -24,7 +24,7 @@ CREATE TABLE personal_servicio (
     id_personal INTEGER PRIMARY KEY,
     nombre VARCHAR2(100) NOT NULL,
     apellido VARCHAR2(100) NOT NULL,
-    pedidos_activos INTEGER DEFAULT 0 CHECK (pedidos_activos <= 5)
+    pedidos_activos INTEGER DEFAULT 0 CHECK (pedidos_activos <= 5)  -- P4.1 / P4.2 / P4.4
 );
 
 CREATE TABLE platos (
@@ -133,7 +133,7 @@ create or replace procedure registrar_pedido(
     --En esta parte actualizo los pedidos del personal, lo bloqueo para escritura
     --Gracias al bloqueo evito que otra transacción modifique el dato hasta que yo finalice
     SELECT pedidos_activos INTO v_numPedidos FROM personal_servicio
-    WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE;
+    WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE; -- P4.1 / P4.2 / P4.5
     
     --Si en esta parte viola la constraint saltara excepcion y la capturo en su bloque
     --Esta es la ultima excepción que podría saltar en el proceso
@@ -442,6 +442,7 @@ begin
   
   
   -- Caso 5: Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
+  -- P4.1 / P4.4
   begin
     dbms_output.put_line(CHR(10)||'Caso 5: Encargo de un pedido a un trabajador que ya tiene 5 pedidos');
     registrar_pedido( 1, 2, 1, 2);    
