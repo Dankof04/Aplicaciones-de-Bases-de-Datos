@@ -1,3 +1,12 @@
+
+/*
+ * PRACTICA 2 APLICACIÓN DE BASES DE DATOS. PLSQL
+ * AUTORES:
+ *      Aaron del Santo Izquierdo
+ *      Daniel Miguel Muiña
+ *      Nicolás Villanueva Ortega
+ */
+
 DROP TABLE detalle_pedido CASCADE CONSTRAINTS;
 DROP TABLE pedidos CASCADE CONSTRAINTS;
 DROP TABLE platos CASCADE CONSTRAINTS;
@@ -8,8 +17,6 @@ DROP SEQUENCE seq_pedidos;
 
 
 -- Creación de tablas y secuencias
-
-
 
 create sequence seq_pedidos;
 
@@ -24,7 +31,7 @@ CREATE TABLE personal_servicio (
     id_personal INTEGER PRIMARY KEY,
     nombre VARCHAR2(100) NOT NULL,
     apellido VARCHAR2(100) NOT NULL,
-    pedidos_activos INTEGER DEFAULT 0 CHECK (pedidos_activos <= 5)  -- P4.1 / P4.2 / P4.4
+    pedidos_activos INTEGER DEFAULT 0 CHECK (pedidos_activos <= 5)  -- P4.1
 );
 
 CREATE TABLE platos (
@@ -133,13 +140,13 @@ create or replace procedure registrar_pedido(
     --En esta parte actualizo los pedidos del personal, lo bloqueo para escritura
     --Gracias al bloqueo evito que otra transacción modifique el dato hasta que yo finalice
     SELECT pedidos_activos INTO v_numPedidos FROM personal_servicio
-    WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE; -- P4.1 / P4.2 / P4.5
+    WHERE personal_servicio.id_personal=arg_id_personal FOR UPDATE; -- P4.2
     
     --Si en esta parte viola la constraint saltara excepcion y la capturo en su bloque
     --Esta es la ultima excepción que podría saltar en el proceso
     UPDATE personal_servicio
     SET pedidos_activos = v_numPedidos + 1
-    WHERE personal_servicio.id_personal=arg_id_personal;
+    WHERE personal_servicio.id_personal=arg_id_personal; --P4.3
     
     --Inserto el pedido en la tabla de pedidos
     INSERT INTO pedidos (id_pedido, id_cliente, id_personal,total)
@@ -191,14 +198,18 @@ end;
 
   /*
    * RESPUESTAS A LAS CUESTIONES PLANTEADAS
+   * Las referencias a las preguntas se encuentran señaladas en el código, somo se solicita en el enunciado.
+   * La P4.1 se encuentra en el check de la tabla, P4.2 en el FOR UPDATE y por último la P4.3 en la actualización
+   * de la tabla personal_servicio, que es el lugar donde podría saltar la última de las excepciones.
    *
    * P4.1 -----------------------------------------------------------------------------------------------------
    * Contamos con un check en el cual comprobamos que el valor de pedidos activos para cada miembro del personal
-   * sea siempre menor o igual que 5, eliminando la posibilidad de superar este valor.
+   * sea siempre menor o igual que 5. Si se viola esta condición, se lanza automaticamente una excepción.
    * Además, contamos con un test específico en el cuál verificamos el comportamiento del código para un caso en
-   * el que un trabajador con ya 5 pedidos activos trata de incluir un sexto pedido, resultando en la correcta
-   * ejecución de dicho test si no se produjera la inserción, avisando en el acto, o advirtiendo de la misma si 
-   * llegara a producirse, lanzando el código -20003 en el acto.
+   * el que un trabajador con ya 5 pedidos activos. Trata de incluir un sexto pedido a un miembro del personal, 
+   * resultando en la correcta ejecución del test si no se produjera la inserción. Avisará lanzando una excepción 
+   * con el código -20003 y un mensaje informativo.
+   *
    *
    * P4.2 -----------------------------------------------------------------------------------------------------
    * Una vez se verifica que los platos existen y están disponibles, se selecciona el campo personal_pedidos
@@ -207,12 +218,16 @@ end;
    * esperar a que la primera termine. A su vez la primera para poder hacer la comprobacion de pedidos maximos 
    * del trabajador gracias al check que posee dicho campo sin interferencias con otras transacciones.
    *
+   *
    * P4.3 -----------------------------------------------------------------------------------------------------
    * Podemos asegurar que un pedido se completará de manera correcta incluso en entornos concurrentes debido al
-   * uso del FOR UPDATE, que bloquea el campo personal_pedidos, garantizando así la secuencialidad de las 
-   * transacciones aún tratandose de entornos concurrentes. De esta forma si otro pedido intenta asignar al
-   * miembro del personal a otro pedido, deberá esperar antes de completar dicha asignación hasta que la primera
-   * se haya produciendo.
+   * uso del FOR UPDATE, que bloquea el campo personal_pedidos para escritura, garantizando así la secuencialidad 
+   * de las transacciones. De esta forma si otra transacción intenta asignar al miembro del personal otro pedido, 
+   * deberá esperar antes de completar dicha asignación hasta que la primera haya terminado.
+   * Además al llegar a ese punto, ya se habrán realizado todas las comprobaciones de los platos. Como sabemos que
+   * los platos son correctos, ya se ha hecho la comprobación del núemero de pedidos para el empleado y tenemos
+   * dicho campo bloqueado para escritura, la transacción finalizará sin ningún problema.
+   *
    *
    * P4.4 -----------------------------------------------------------------------------------------------------
    * El hipotético check por el que se nos pregunta, ya estaba incluido en la correspondiente tabla a la hora de 
@@ -442,7 +457,6 @@ begin
   
   
   -- Caso 5: Personal de servicio ya tiene 5 pedidos activos y se le asigna otro pedido devuelve el error -20003
-  -- P4.1 / P4.4
   begin
     dbms_output.put_line(CHR(10)||'Caso 5: Encargo de un pedido a un trabajador que ya tiene 5 pedidos');
     registrar_pedido( 1, 2, 1, 2);    
