@@ -198,7 +198,7 @@ end;
    * Además, contamos con un test específico en el cuál verificamos el comportamiento del código para un caso en
    * el que un trabajador con ya 5 pedidos activos trata de incluir un sexto pedido, resultando en la correcta
    * ejecución de dicho test si no se produjera la inserción, avisando en el acto, o advirtiendo de la misma si 
-   * llegara a producirse
+   * llegara a producirse, lanzando el código -20003 en el acto.
    *
    * P4.2 -----------------------------------------------------------------------------------------------------
    * Una vez se verifica que los platos existen y están disponibles, se selecciona el campo personal_pedidos
@@ -208,7 +208,11 @@ end;
    * del trabajador gracias al check que posee dicho campo sin interferencias con otras transacciones.
    *
    * P4.3 -----------------------------------------------------------------------------------------------------
-   *
+   * Podemos asegurar que un pedido se completará de manera correcta incluso en entornos concurrentes debido al
+   * uso del FOR UPDATE, que bloquea el campo personal_pedidos, garantizando así la secuencialidad de las 
+   * transacciones aún tratandose de entornos concurrentes. De esta forma si otro pedido intenta asignar al
+   * miembro del personal a otro pedido, deberá esperar antes de completar dicha asignación hasta que la primera
+   * se haya produciendo.
    *
    * P4.4 -----------------------------------------------------------------------------------------------------
    * El hipotético check por el que se nos pregunta, ya estaba incluido en la correspondiente tabla a la hora de 
