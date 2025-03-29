@@ -1,6 +1,10 @@
 
 /*
  * PRACTICA 2 APLICACIÓN DE BASES DE DATOS. PLSQL
+ *
+ * REPO DE GITHUB:
+ *      https://github.com/Dankof04/Practica2_PL-SQL.git
+ *
  * AUTORES:
  *      Aaron del Santo Izquierdo
  *      Daniel Miguel Muiña
