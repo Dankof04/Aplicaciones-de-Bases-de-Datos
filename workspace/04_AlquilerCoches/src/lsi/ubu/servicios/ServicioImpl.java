@@ -22,8 +22,8 @@ public class ServicioImpl implements Servicio {
 		PoolDeConexiones pool = PoolDeConexiones.getInstance();
 
 		Connection con = null;
-		PreparedStatement st = null;
-		ResultSet rs = null;
+		PreparedStatement insReserva = null;
+		ResultSet cursor = null;
 
 		/*
 		 * El calculo de los dias se da hecho
@@ -36,13 +36,16 @@ public class ServicioImpl implements Servicio {
 				throw new AlquilerCochesException(AlquilerCochesException.SIN_DIAS);
 			}
 		}
+		else {
+			//Si la fecha de fin es null la calculo sumando a la de inicio los dÃ­as de alquiler
+			fechaFin = new Date(fechaIni.getTime() + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
+		}
 
 		try {
-			con = pool.getConnection();
 
 			/* A completar por el alumnado... */
 
-			/* ================================= AYUDA RÁPIDA ===========================*/
+			/* ================================= AYUDA Rï¿½PIDA ===========================*/
 			/*
 			 * Algunas de las columnas utilizan tipo numeric en SQL, lo que se traduce en
 			 * BigDecimal para Java.
@@ -62,6 +65,8 @@ public class ServicioImpl implements Servicio {
 			 * calcular sumando los dias de alquiler (ver variable DIAS_DE_ALQUILER) a la
 			 * fecha ini.
 			 */
+			con = pool.getConnection();
+			insReserva = con.prepareStatement("");
 
 		} catch (SQLException e) {
 			// Completar por el alumno
