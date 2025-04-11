@@ -23,6 +23,7 @@ public class ServicioImpl implements Servicio {
 
 		Connection con = null;
 		PreparedStatement insReserva = null;
+		PreparedStatement selReserva = null;
 		ResultSet cursor = null;
 
 		/*
@@ -65,18 +66,67 @@ public class ServicioImpl implements Servicio {
 			 * calcular sumando los dias de alquiler (ver variable DIAS_DE_ALQUILER) a la
 			 * fecha ini.
 			 */
+			
+			//Inicializo la conexión a la base de datos
 			con = pool.getConnection();
+			
+			// Defino strings con las consultas para hacer el proceso mas ordenado
+			String sqlCliente = "SELECT NIF FROM clientes WHERE NIF = ?";
+			String sqlCoche = "SELECT matricula FROM vehiculos WHERE matricula = ?";
+			
+			//Realizo la primera comprobacion para saber si existe el cliente
+			selReserva = con.prepareStatement(sqlCliente);
+			selReserva.setString(1,nifCliente);
+			
+			cursor = selReserva.executeQuery();
+			if (!cursor.next()) {
+				throw new AlquilerCochesException(AlquilerCochesException.CLIENTE_NO_EXIST);
+			}
+			
+			//La existencia de coche la puedo comprobar igual o luego capturando FK_VIOLATED
+			
+			
+			
+			
 			insReserva = con.prepareStatement("");
+			
+			//Si se ha llegado hasta aquí sin excepciones hacemos commit en la transacción
+			con.commit();
 
 		} catch (SQLException e) {
-			// Completar por el alumno
+			
+			//Cualquier excepción primero hacer rollback
+			if (con != null) {
+				con.rollback();
+			}
+			
+			//Si es del mi tipo la propago
+			if(e instanceof AlquilerCochesException) {
+				throw (AlquilerCochesException) e;
+			}
 
+			// Esto es lo q estaba por defecto en el archivo
 			LOGGER.debug(e.getMessage());
 
 			throw e;
 
 		} finally {
-			/* A rellenar por el alumnado*/
+			
+			if (insReserva != null) {
+				insReserva.close();
+			}
+			
+			if (selReserva != null) {
+				selReserva.close();
+			}
+			
+			if (cursor != null) {
+				cursor.close();
+			}
+			
+			if (con != null) {
+				con.close();
+			}
 		}
 	}
 }
