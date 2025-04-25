@@ -26,7 +26,6 @@ public class ServicioImpl implements Servicio {
 		PoolDeConexiones pool = PoolDeConexiones.getInstance();
 
 		Connection con = null;
-		PreparedStatement selCliente = null;
 		PreparedStatement selVehiculo = null;
 		PreparedStatement selDisponible = null;
 		PreparedStatement insReserva = null;
@@ -36,18 +35,22 @@ public class ServicioImpl implements Servicio {
 		 * El calculo de los dias se da hecho
 		 */
 		long diasDiff = DIAS_DE_ALQUILER;
+		
+		//Emplearé esta variable para tener siempre la fecha final correcta, tanto como si es nula como si no
+		Date fechaFinAux = null;
+		
 		if (fechaFin != null) {
 			diasDiff = TimeUnit.MILLISECONDS.toDays(fechaFin.getTime() - fechaIni.getTime());
-
+			fechaFinAux = fechaFin;
 			if (diasDiff < 1) {
 				throw new AlquilerCochesException(AlquilerCochesException.SIN_DIAS);
 			}
 		}
 		
-		//CREO Q NO SE PUEDE O NO SE HACE ASÍ: CORREGIR
+		//Dejo la fecha de fin calculada
 		else {
 			//Si la fecha de fin es null la calculo sumando a la de inicio los días de alquiler
-			fechaFin = new Date(fechaIni.getTime() + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
+			fechaFinAux = new Date(fechaIni.getTime() + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
 		}
 
 		try {
@@ -66,7 +69,7 @@ public class ServicioImpl implements Servicio {
 			 * Multiplicar 2 BigDecimals: usar metodo "multiply" de la clase BigDecimal
 			 *
 			 * 
-			 * Paso de util.Date a sql.Date java.sql.Date sqlFechaIni = new
+			 * Paso de util.Date a sql.Date: java.sql.Date sqlFechaIni = new
 			 * java.sql.Date(sqlFechaIni.getTime());
 			 *
 			 *
@@ -100,29 +103,34 @@ public class ServicioImpl implements Servicio {
 			selDisponible.setString(1,matricula);
 			
 			cursor = selDisponible.executeQuery();
+			
+			//Defino unas variables de tipo Date donde iré guardando los valores de las fechas ya reservadas que nos devuelva la select
+			Date fechaIniReservado = null;
+			Date fechaFinReservado = null;
+			
+			//Itero por todas las reservas realizadas para dicho vehículo
 			while(cursor.next()) {
+				fechaIniReservado = cursor.getDate("fecha_ini");
+				fechaFinReservado = cursor.getDate("fecha_fin");
+				if (fechaFinReservado == null) {
+					fechaFinReservado = new Date(fechaIniReservado.getTime() + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
+				}
 				
+				// Dos intervalos [A1,A2] y [B1,B2] se solapan si A1 <= B2 y B1 <= A2 por lo que haremos dicha comprobación
+				// Emplearé: date1.after(date2) → true si date1 > date2
+				if (!fechaIni.after(fechaFinReservado) && !fechaIniReservado.after(fechaFinAux)) {
+					throw new AlquilerCochesException(AlquilerCochesException.VEHICULO_OCUPADO);
+				}
 			}
 			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
-			
+			/* 
+			 * Una vez gestionada la principal excepción (vehículo ocupado) ya que las demás son violaciones de claves foráneas, realizo la
+			 * inserción de la reserva. Si no existe coche ya habrá saltado y si no existe cliente saltará al intentar insertar.
+			 */
 			
 			insReserva = con.prepareStatement("");
+			
+			
 			
 			//Si se ha llegado hasta aquí sin excepciones hacemos commit en la transacción
 			con.commit();
@@ -155,10 +163,6 @@ public class ServicioImpl implements Servicio {
 			
 			if (insReserva != null) {
 				insReserva.close();
-			}
-			
-			if (selCliente != null) {
-				selCliente.close();
 			}
 			
 			if (selVehiculo != null) {
