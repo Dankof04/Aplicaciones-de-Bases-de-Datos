@@ -26,9 +26,9 @@ public class ServicioImpl implements Servicio {
 		PoolDeConexiones pool = PoolDeConexiones.getInstance();
 
 		Connection con = null;
-		PreparedStatement selVehiculo = null;
 		PreparedStatement selDisponible = null;
 		PreparedStatement insReserva = null;
+		PreparedStatement insFactura = null;
 		ResultSet cursor = null;
 
 		/*
@@ -40,15 +40,18 @@ public class ServicioImpl implements Servicio {
 		Date fechaFinAux = null;
 		
 		if (fechaFin != null) {
-			diasDiff = TimeUnit.MILLISECONDS.toDays(fechaFin.getTime() - fechaIni.getTime());
+			
 			fechaFinAux = fechaFin;
+			diasDiff = TimeUnit.MILLISECONDS.toDays(fechaFin.getTime() - fechaIni.getTime());
+			
 			if (diasDiff < 1) {
 				throw new AlquilerCochesException(AlquilerCochesException.SIN_DIAS);
 			}
 		}
 		
-		//Dejo la fecha de fin calculada
+		//Dejo la fecha de fin calculada en caso de que sea null la fechaFin introducida
 		else {
+			
 			//Si la fecha de fin es null la calculo sumando a la de inicio los días de alquiler
 			fechaFinAux = new Date(fechaIni.getTime() + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
 		}
@@ -82,21 +85,16 @@ public class ServicioImpl implements Servicio {
 			//Inicializo la conexión a la base de datos
 			con = pool.getConnection();
 			
-			/*-----------------------------------------------------------------------------------------*/
-			
-			//Realizo la comprobacion para saber si existe el vehículo
-			selVehiculo = con.prepareStatement("SELECT matricula FROM vehiculos WHERE matricula = ?");
-			selVehiculo.setString(1,matricula);
-			
-			cursor = selVehiculo.executeQuery();
-			if (!cursor.next()) {
-				throw new AlquilerCochesException(AlquilerCochesException.VEHICULO_NO_EXIST);
-			}
-			cursor.close();
-			
-			//Si cuando insertemos el cliente este no existe, se violará la fk, se capturará en el catch y se propaga la correcta
-			
-			/*-----------------------------------------------------------------------------------------*/
+			/*---------------------------------------------------------------------------------------------------
+			 * Para la gestion de las excepciones de cliente y vehículo inexistente plantearé un enfoque ofensivo.
+			 * Primero gestionaré la excepción de vehiculo ocupado de manera defensiva, ya que de otra manera no 
+			 * se detectará sola.
+			 * Sin embargo, no detectaré si existe o no el cliente o el coche. Es decir, realizaré la insercion y si
+			 * dichos elementos no existen, por la forma en la que están diseñadas las tablas, saltará una excepción 
+			 * de clave foránea (2291)
+			 * Por lo tanto será al capturarla cuando detecte que clave foránea ha sido violada y propague la excepción
+			 * correcta.
+			*-----------------------------------------------------------------------------------------*/
 			
 			//Ahora comprobaré la disponibilidad del coche introducido en las fechas especificadas
 			selDisponible = con.prepareStatement("SELECT fecha_ini, fecha_fin FROM reservas WHERE matricula = ?");
@@ -122,14 +120,35 @@ public class ServicioImpl implements Servicio {
 					throw new AlquilerCochesException(AlquilerCochesException.VEHICULO_OCUPADO);
 				}
 			}
+			cursor.close();
 			
 			/* 
-			 * Una vez gestionada la principal excepción (vehículo ocupado) ya que las demás son violaciones de claves foráneas, realizo la
-			 * inserción de la reserva. Si no existe coche ya habrá saltado y si no existe cliente saltará al intentar insertar.
+			 * Una vez gestionada la principal excepción (vehículo ocupado) ya que las demás son violaciones de claves 
+			 * foráneas, realizo la inserción de la reserva. Si no existe coche ya habrá saltado y si no existe cliente 
+			 * saltará al intentar insertar.
 			 */
 			
-			insReserva = con.prepareStatement("");
+			insReserva = con.prepareStatement(
+					"INSERT INTO reservas " +
+					"(idReserva, cliente, matricula, fecha_ini, fecha_fin) " + 
+					"VALUES (seq_reservas.nextval,?,?,?,?)");
 			
+			insReserva.setString(1, nifCliente);
+			insReserva.setString(2, matricula);
+			
+			//Para insertarlo en la tabla tengo que convertir las fechas de util.Date a sql.Date
+			insReserva.setDate(3, new java.sql.Date(fechaIni.getTime()));
+			
+			//Como fechaFin puede ser null, empleo un operador ternario para gestionar dicha posibilidad
+			//Si fechaFin es nula, la fecha en sql tendrá ese mismo valor, sino se realiza la conversión
+			java.sql.Date sqlfechaFin = (fechaFin == null ? null : new java.sql.Date(fechaFin.getTime()));
+			insReserva.setDate(4, sqlfechaFin);
+			
+			//Por último realizo la inserción en la tabla reservas
+			insReserva.executeUpdate();
+			
+			//Ahora realizaré la inserción en la tabla facturas.
+			insFactura = con.prepareStatement("INSERT INTO facturas (nroFactura, importe, cliente) VALUES ");
 			
 			
 			//Si se ha llegado hasta aquí sin excepciones hacemos commit en la transacción
@@ -148,30 +167,46 @@ public class ServicioImpl implements Servicio {
 			}
 			
 			if(new OracleSGBDErrorUtil().checkExceptionToCode(e, SGBDError.FK_VIOLATED)) {
-				//En caso de que se viole una clave foránea, compruebo cual es y saco la excepción adecuada
-				//Pero si no se viola la clave no necesito comprobar nada y me lo ahorro
-				//Sin embargo si compruebo fuera la de clientes, la uníca Fk q podríamos violar es la de coches
-				throw new AlquilerCochesException(AlquilerCochesException.CLIENTE_NO_EXIST);
+				/*
+				 * Como he explicado anteriormente al realizar la inserción saltará una excepción de violación de 
+				 * clave foránea si no existe el cliente o el vehículo. Al capturar aquí dicha excepción detectaré
+				 * que clave foránea ha sido violada
+				 * Para ello emplearé bloques try-with-resources. Dichos bloques no necesitan finally ya que cierran
+				 * los recursos automaticamente despúes de terminar de usarlos.
+				 * Como estamos realizando una select dentro del bloque de excepciones necesitamos los bloques try
+				 * ya que pueden saltar excepciones que no son de nuestro tipo.
+				 */
+				boolean existeCliente;
+				try (PreparedStatement selFKFail = con.prepareStatement("SELECT NIF FROM clientes WHERE NIF = ?")){
+					selFKFail.setString(1,nifCliente);
+					try (ResultSet getFKFail = selFKFail.executeQuery();){
+						existeCliente = getFKFail.next();
+					}
+				}
+				
+				// Si se ha entrado en este bloque significa que o el cliente o el coche no existe.
+				if (!existeCliente) {
+					throw new AlquilerCochesException(AlquilerCochesException.CLIENTE_NO_EXIST);
+				}
+				else {
+					throw new AlquilerCochesException(AlquilerCochesException.VEHICULO_NO_EXIST);
+				}
 			}
 
 			// Esto es lo q estaba por defecto en el archivo
 			LOGGER.debug(e.getMessage());
-
 			throw e;
 
 		} finally {
+			
+			if (cursor != null) {
+				cursor.close();
+			}
 			
 			if (insReserva != null) {
 				insReserva.close();
 			}
 			
-			if (selVehiculo != null) {
-				selVehiculo.close();
-			}
-			
-			if (cursor != null) {
-				cursor.close();
-			}
 			
 			if (con != null) {
 				con.close();
