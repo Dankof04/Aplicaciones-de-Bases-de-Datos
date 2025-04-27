@@ -1,5 +1,6 @@
 package lsi.ubu.servicios;
 
+import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -28,7 +29,9 @@ public class ServicioImpl implements Servicio {
 		Connection con = null;
 		PreparedStatement selDisponible = null;
 		PreparedStatement insReserva = null;
+		PreparedStatement selImportes = null;
 		PreparedStatement insFactura = null;
+		PreparedStatement insLineaFactura = null;
 		ResultSet cursor = null;
 
 		/*
@@ -58,28 +61,8 @@ public class ServicioImpl implements Servicio {
 
 		try {
 
-			/* A completar por el alumnado... */
-
-			/* ================================= AYUDA R�PIDA ===========================*/
-			/*
-			 * Algunas de las columnas utilizan tipo numeric en SQL, lo que se traduce en
-			 * BigDecimal para Java.
-			 * 
-			 * Convertir un entero en BigDecimal: new BigDecimal(diasDiff)
-			 * 
-			 * Sumar 2 BigDecimals: usar metodo "add" de la clase BigDecimal
-			 * 
-			 * Multiplicar 2 BigDecimals: usar metodo "multiply" de la clase BigDecimal
-			 *
-			 * 
-			 * Paso de util.Date a sql.Date: java.sql.Date sqlFechaIni = new
-			 * java.sql.Date(sqlFechaIni.getTime());
-			 *
-			 *
-			 * Recuerda que hay casos donde la fecha fin es nula, por lo que se debe de
-			 * calcular sumando los dias de alquiler (ver variable DIAS_DE_ALQUILER) a la
-			 * fecha ini.
-			 * 
+			/* 
+			 * Paso de util.Date a sql.Date: java.sql.Date sqlFechaIni = new java.sql.Date(sqlFechaIni.getTime());
 			 */
 			
 			//Inicializo la conexión a la base de datos
@@ -122,7 +105,7 @@ public class ServicioImpl implements Servicio {
 			}
 			cursor.close();
 			
-			/* 
+			/* -------------------------------------------------------------------------------------------------------
 			 * Una vez gestionada la principal excepción (vehículo ocupado) ya que las demás son violaciones de claves 
 			 * foráneas, realizo la inserción de la reserva. Si no existe coche ya habrá saltado y si no existe cliente 
 			 * saltará al intentar insertar.
@@ -147,9 +130,48 @@ public class ServicioImpl implements Servicio {
 			//Por último realizo la inserción en la tabla reservas
 			insReserva.executeUpdate();
 			
-			//Ahora realizaré la inserción en la tabla facturas.
-			insFactura = con.prepareStatement("INSERT INTO facturas (nroFactura, importe, cliente) VALUES ");
+			//--------------------------------------------------------------------------------------------
+			//En esta parte realizaré todos los calculos de los importes de la reserva
+			selImportes = con.prepareStatement(
+					"SELECT m.precio_cada_dia, m.capacidad_deposito, p.precio_por_litro " +
+					"FROM vehiculos v JOIN modelos m USING (id_modelo) " +
+					"JOIN precio_combustible p USING (tipo_combustible) " + 
+					"WHERE v.matricula = ?");
 			
+			selImportes.setString(1, matricula);
+			cursor = selImportes.executeQuery();
+			
+			//Obtengo del ResultSet los datos que necesito y realizo las operaciones en BigDecimal
+			BigDecimal dias_alquiler = null;
+			BigDecimal precioXdia = null;
+			BigDecimal capacidad_depo = null;
+			BigDecimal precioXlitro = null;
+			
+			if (cursor.next()) {
+				dias_alquiler = new BigDecimal(diasDiff);
+				precioXdia = cursor.getBigDecimal("precio_cada_dia");
+				capacidad_depo = new BigDecimal(cursor.getInt("capacidad_deposito"));
+				precioXlitro = cursor.getBigDecimal("precio_por_litro");
+			}
+			
+			//Calculo los importes con los datos recuperados
+			BigDecimal importeVehiculo = dias_alquiler.multiply(precioXdia);
+			BigDecimal importeFuel = capacidad_depo.multiply(precioXlitro);
+			
+			BigDecimal importeTotal = importeVehiculo.add(importeFuel);
+			
+			//Ahora realizaré la inserción en la tabla facturas.
+			insFactura = con.prepareStatement(
+					"INSERT INTO facturas (nroFactura, importe, cliente) " +
+					"VALUES (seq_num_fact.nextval,?,?)");
+			insFactura.setBigDecimal(1, importeTotal);
+			insFactura.setString(2, nifCliente);
+			//-----------------------------------------------------------------------------------------
+			
+			//Por último hago la inserción de los dos importes en la tabla líneas de factura (dos inserciones)
+			insLineaFactura = con.prepareStatement(
+					"INSERT INTO lineas_factura (nroFactura, concepto, importe) " +
+					"VALUES (seq_num_fact.currval,?,?)");
 			
 			//Si se ha llegado hasta aquí sin excepciones hacemos commit en la transacción
 			con.commit();
@@ -193,8 +215,8 @@ public class ServicioImpl implements Servicio {
 				}
 			}
 
-			// Esto es lo q estaba por defecto en el archivo
-			LOGGER.debug(e.getMessage());
+			// Si la excepción es de cualquier otro tipo se guarda en el logger y se propaga
+			LOGGER.error(e.getMessage());
 			throw e;
 
 		} finally {
@@ -203,10 +225,25 @@ public class ServicioImpl implements Servicio {
 				cursor.close();
 			}
 			
+			if (selDisponible != null) {
+				selDisponible.close();
+			}
+			
 			if (insReserva != null) {
 				insReserva.close();
 			}
 			
+			if (selImportes != null) {
+				selImportes.close();
+			}
+			
+			if (insFactura != null) {
+				insFactura.close();
+			}
+			
+			if (insLineaFactura != null) {
+				insLineaFactura.close();
+			}
 			
 			if (con != null) {
 				con.close();
