@@ -5997,3 +5997,48 @@ DEBUG: [lsi.ubu.util.PoolDeConexiones.getConnection(PoolDeConexiones.java:111)]2
 INFO : [lsi.ubu.solucion.AlquilerCoches.ejecutarTests(AlquilerCoches.java:372)]2024-03-08 08:22:37.867 [main] AlquilerCoches - Caso alquiler correcto pero SI especifico la fecha final --------------
 INFO : [lsi.ubu.solucion.AlquilerCoches.ejecutarTests(AlquilerCoches.java:381)]2024-03-08 08:22:37.867 [main] AlquilerCoches - SI Coinciden la factura y las linea de factura OK
 INFO : [lsi.ubu.solucion.AlquilerCoches.main(AlquilerCoches.java:48)]2024-03-08 08:22:37.867 [main] AlquilerCoches - Fin de los tests
+ERROR: [lsi.ubu.util.ExecuteScript.run(ExecuteScript.java:59)]2025-04-28 00:17:31.480 [main] ExecuteScript - Cannot run program "sql/lanza_sqlplus.sh": error=13, Permiso denegado
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:17:32.162 [main] ServicioImpl - ORA-00942: table or view does not exist
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:17:32.165 [main] ServicioImpl - ORA-00942: table or view does not exist
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:17:32.260 [main] ServicioImpl - ORA-00942: table or view does not exist
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:140)]2025-04-28 00:17:32.261 [main] Tests - ORA-00942: table or view does not exist
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:17:32.310 [main] ServicioImpl - ORA-00942: table or view does not exist
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:358)]2025-04-28 00:17:32.310 [main] Tests - ORA-00942: table or view does not exist
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:22:27.978 [main] ServicioImpl - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:140)]2025-04-28 00:22:27.979 [main] Tests - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:22:28.054 [main] ServicioImpl - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:358)]2025-04-28 00:22:28.054 [main] Tests - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:37:32.458 [main] ServicioImpl - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:140)]2025-04-28 00:37:32.459 [main] Tests - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:37:32.543 [main] ServicioImpl - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:358)]2025-04-28 00:37:32.544 [main] Tests - ORA-25154: column part of USING clause cannot have qualifier
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:41:51.955 [main] ServicioImpl - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 58, maximum: 40)
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:140)]2025-04-28 00:41:51.957 [main] Tests - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 58, maximum: 40)
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:41:52.034 [main] ServicioImpl - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 56, maximum: 40)
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:358)]2025-04-28 00:41:52.034 [main] Tests - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 56, maximum: 40)
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:50:49.543 [main] ServicioImpl - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 58, maximum: 40)
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:140)]2025-04-28 00:50:49.545 [main] Tests - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 58, maximum: 40)
+
+ERROR: [lsi.ubu.servicios.ServicioImpl.alquilar(ServicioImpl.java:237)]2025-04-28 00:50:49.624 [main] ServicioImpl - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 56, maximum: 40)
+
+ERROR: [lsi.ubu.tests.Tests.ejecutarTests(Tests.java:358)]2025-04-28 00:50:49.624 [main] Tests - ORA-12899: value too large for column "HR"."LINEAS_FACTURA"."CONCEPTO" (actual: 56, maximum: 40)
+

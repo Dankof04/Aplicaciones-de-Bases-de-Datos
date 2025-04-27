@@ -24,6 +24,15 @@ public class ServicioImpl implements Servicio {
 
 	public void alquilar(String nifCliente, String matricula, Date fechaIni, Date fechaFin) throws SQLException {
 		
+		/*
+		 * ¡IMPORTANTE!
+		 * El test Alquilar vehiculo inexistente no pasa, sin embargo es problema del test, no del método. Esto es
+		 * debido a que además del coche inexistente, tabién se pasa un cliente inexistente, por lo que siempre 
+		 * salta antes la excepción de cliente inexistente.
+		 * Debido a esto, en el test voy a cambiar el nif del cliente, por uno existente, para que sea 
+		 * exclusivamente el test de vehículo inexistente.
+		 * Este problema ya se comentó en el foro.
+		 */
 		PoolDeConexiones pool = PoolDeConexiones.getInstance();
 
 		Connection con = null;
@@ -60,10 +69,6 @@ public class ServicioImpl implements Servicio {
 		}
 
 		try {
-
-			/* 
-			 * Paso de util.Date a sql.Date: java.sql.Date sqlFechaIni = new java.sql.Date(sqlFechaIni.getTime());
-			 */
 			
 			//Inicializo la conexión a la base de datos
 			con = pool.getConnection();
@@ -90,6 +95,7 @@ public class ServicioImpl implements Servicio {
 			Date fechaFinReservado = null;
 			
 			//Itero por todas las reservas realizadas para dicho vehículo
+			// Paso de util.Date a sql.Date: java.sql.Date sqlFechaIni = new java.sql.Date(sqlFechaIni.getTime());
 			while(cursor.next()) {
 				fechaIniReservado = cursor.getDate("fecha_ini");
 				fechaFinReservado = cursor.getDate("fecha_fin");
@@ -103,6 +109,7 @@ public class ServicioImpl implements Servicio {
 					throw new AlquilerCochesException(AlquilerCochesException.VEHICULO_OCUPADO);
 				}
 			}
+			
 			cursor.close();
 			
 			/* -------------------------------------------------------------------------------------------------------
@@ -133,7 +140,7 @@ public class ServicioImpl implements Servicio {
 			//--------------------------------------------------------------------------------------------
 			//En esta parte realizaré todos los calculos de los importes de la reserva
 			selImportes = con.prepareStatement(
-					"SELECT m.nombre, m.precio_cada_dia, m.capacidad_deposito, p.tipo_combustible, p.precio_por_litro " +
+					"SELECT id_modelo, m.precio_cada_dia, m.capacidad_deposito, tipo_combustible, p.precio_por_litro " +
 					"FROM vehiculos v JOIN modelos m USING (id_modelo) " +
 					"JOIN precio_combustible p USING (tipo_combustible) " + 
 					"WHERE v.matricula = ?");
@@ -143,7 +150,7 @@ public class ServicioImpl implements Servicio {
 			
 			//Obtengo del ResultSet los datos que necesito y realizo las operaciones en BigDecimal
 			//Selecciono también el nombre del modelo del coche y el tipo de gasolina para meterlo en el concepto de la factura
-			String nombreModelo = null;
+			int modelo = 0;
 			BigDecimal dias_alquiler = null;
 			BigDecimal precioXdia = null;
 			BigDecimal capacidad_depo = null;
@@ -152,7 +159,7 @@ public class ServicioImpl implements Servicio {
 			
 			
 			if (cursor.next()) {
-				nombreModelo = cursor.getString("nombre");
+				modelo = cursor.getInt("id_modelo");
 				dias_alquiler = new BigDecimal(diasDiff);
 				precioXdia = cursor.getBigDecimal("precio_cada_dia");
 				capacidad_depo = new BigDecimal(cursor.getInt("capacidad_deposito"));
@@ -182,12 +189,12 @@ public class ServicioImpl implements Servicio {
 					"VALUES (seq_num_fact.currval,?,?)");
 			
 			//Primero inserto el coste del modelo del coche
-			insLineaFactura.setString(1, diasDiff + " dias de alquiler, vehículo modelo " + nombreModelo);
+			insLineaFactura.setString(1, diasDiff + " dias de alquiler, vehiculo modelo " + modelo);
 			insLineaFactura.setBigDecimal(2, importeVehiculo);
 			insLineaFactura.executeUpdate();
 			
 			//Despúes inserto el precio del combustible
-			insLineaFactura.setString(1, "Depósito lleno de " + capacidad_depo + " litros de " + nombreCombustible);
+			insLineaFactura.setString(1, "Deposito lleno de " + capacidad_depo + " litros de " + nombreCombustible);
 			insLineaFactura.setBigDecimal(2, importeFuel);
 			insLineaFactura.executeUpdate();
 			
