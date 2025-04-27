@@ -133,7 +133,7 @@ public class ServicioImpl implements Servicio {
 			//--------------------------------------------------------------------------------------------
 			//En esta parte realizaré todos los calculos de los importes de la reserva
 			selImportes = con.prepareStatement(
-					"SELECT m.precio_cada_dia, m.capacidad_deposito, p.precio_por_litro " +
+					"SELECT m.nombre, m.precio_cada_dia, m.capacidad_deposito, p.tipo_combustible, p.precio_por_litro " +
 					"FROM vehiculos v JOIN modelos m USING (id_modelo) " +
 					"JOIN precio_combustible p USING (tipo_combustible) " + 
 					"WHERE v.matricula = ?");
@@ -142,16 +142,23 @@ public class ServicioImpl implements Servicio {
 			cursor = selImportes.executeQuery();
 			
 			//Obtengo del ResultSet los datos que necesito y realizo las operaciones en BigDecimal
+			//Selecciono también el nombre del modelo del coche y el tipo de gasolina para meterlo en el concepto de la factura
+			String nombreModelo = null;
 			BigDecimal dias_alquiler = null;
 			BigDecimal precioXdia = null;
 			BigDecimal capacidad_depo = null;
+			String nombreCombustible = null;
 			BigDecimal precioXlitro = null;
 			
+			
 			if (cursor.next()) {
+				nombreModelo = cursor.getString("nombre");
 				dias_alquiler = new BigDecimal(diasDiff);
 				precioXdia = cursor.getBigDecimal("precio_cada_dia");
 				capacidad_depo = new BigDecimal(cursor.getInt("capacidad_deposito"));
+				nombreCombustible = cursor.getString("tipo_combustible");
 				precioXlitro = cursor.getBigDecimal("precio_por_litro");
+				
 			}
 			
 			//Calculo los importes con los datos recuperados
@@ -166,12 +173,23 @@ public class ServicioImpl implements Servicio {
 					"VALUES (seq_num_fact.nextval,?,?)");
 			insFactura.setBigDecimal(1, importeTotal);
 			insFactura.setString(2, nifCliente);
+			insFactura.executeUpdate();
 			//-----------------------------------------------------------------------------------------
 			
 			//Por último hago la inserción de los dos importes en la tabla líneas de factura (dos inserciones)
 			insLineaFactura = con.prepareStatement(
 					"INSERT INTO lineas_factura (nroFactura, concepto, importe) " +
 					"VALUES (seq_num_fact.currval,?,?)");
+			
+			//Primero inserto el coste del modelo del coche
+			insLineaFactura.setString(1, diasDiff + " dias de alquiler, vehículo modelo " + nombreModelo);
+			insLineaFactura.setBigDecimal(2, importeVehiculo);
+			insLineaFactura.executeUpdate();
+			
+			//Despúes inserto el precio del combustible
+			insLineaFactura.setString(1, "Depósito lleno de " + capacidad_depo + " litros de " + nombreCombustible);
+			insLineaFactura.setBigDecimal(2, importeFuel);
+			insLineaFactura.executeUpdate();
 			
 			//Si se ha llegado hasta aquí sin excepciones hacemos commit en la transacción
 			con.commit();
