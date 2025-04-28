@@ -71,7 +71,7 @@ public class ServicioImpl implements Servicio {
             // Emplearé esta variable para tener siempre la fecha final correcta, tanto si es nula como si no
             Date fechaFinAux = null;
 
-            //Si la fecha de inicio coincide con la de fin, lanzamos excepción
+            //Si la fecha de inicio no es nula, calculamos la diferencia de días, si fuera menor que 1, lanzamos excepción
             if (fechaFin != null) {
                 fechaFinAux = fechaFin;
                 diasDiff = TimeUnit.MILLISECONDS.toDays(fechaFin.getTime() - fechaIni.getTime());
