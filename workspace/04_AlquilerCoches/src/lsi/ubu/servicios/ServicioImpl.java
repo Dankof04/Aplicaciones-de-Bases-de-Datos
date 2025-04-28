@@ -47,6 +47,12 @@ public class ServicioImpl implements Servicio {
          * Durente la práctica hemos empleado el logger para indicar distintos tipos de mensajes, warnings, 
          * errores o simplemente información de la ejecución. Es una herramienta muy útil para controlar la
          * ejecucion de nuestra aplicación java
+         * 
+         * No se han empleado LOGGER.warn y LOGGER.info para no ensuciar la salida de la ejecución de los teses en la consola.
+         * Sin embargo toda la información de lo que va pasando se envía al LOGGER.debug. En la consola solo se mostraran los
+         * mensajes de INFO. Mientras que en el archivo .log se guardarán los demás (debug warnings y errores).
+         * Se ha configurado de la siguiente manera para ver la salida por pantalla en la consola lo más limpia posible. Sin
+         * embargo en el archivo .log se guarda una gran cantidad de información. Esto siempre se puede cambiar desde log4j.properties
          */
         PoolDeConexiones pool = PoolDeConexiones.getInstance();
 
@@ -58,29 +64,28 @@ public class ServicioImpl implements Servicio {
         PreparedStatement insLineaFactura = null;
         ResultSet cursor = null;
 
-        /*
-         * El cálculo de los días se da hecho
-         */
-        long diasDiff = DIAS_DE_ALQUILER;
-
-        // Emplearé esta variable para tener siempre la fecha final correcta, tanto si es nula como si no
-        Date fechaFinAux = null;
-
-        if (fechaFin != null) {
-            fechaFinAux = fechaFin;
-            diasDiff = TimeUnit.MILLISECONDS.toDays(fechaFin.getTime() - fechaIni.getTime());
-
-            if (diasDiff < 1) {
-                throw new AlquilerCochesException(AlquilerCochesException.SIN_DIAS);
-            }
-        }
-        // Dejo la fecha de fin calculada en caso de que sea null la fechaFin introducida
-        else {
-            // Si la fecha de fin es null la calculo sumando a la de inicio los días de alquiler
-            fechaFinAux = new Date(fechaIni.getTime() + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
-        }
-
         try {
+        
+            //El cálculo de los días se da hecho. Se ha incluido tambíen dentro del try-catch
+            long diasDiff = DIAS_DE_ALQUILER;
+
+            // Emplearé esta variable para tener siempre la fecha final correcta, tanto si es nula como si no
+            Date fechaFinAux = null;
+
+            if (fechaFin != null) {
+                fechaFinAux = fechaFin;
+                diasDiff = TimeUnit.MILLISECONDS.toDays(fechaFin.getTime() - fechaIni.getTime());
+
+                if (diasDiff < 1) {
+                    throw new AlquilerCochesException(AlquilerCochesException.SIN_DIAS);
+                }
+            }
+            // Dejo la fecha de fin calculada en caso de que sea null la fechaFin introducida
+            else {
+                // Si la fecha de fin es null la calculo sumando a la de inicio los días de alquiler
+                fechaFinAux = new Date(fechaIni.getTime() + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
+            }
+            
             // Inicializo la conexión a la base de datos
             con = pool.getConnection();
             LOGGER.debug("Conexión obtenida para alquiler: nifCliente={}, matricula={}", nifCliente, matricula);
@@ -213,18 +218,18 @@ public class ServicioImpl implements Servicio {
 
             // Si se ha llegado hasta aquí sin excepciones hacemos commit en la transacción
             con.commit();
-            LOGGER.info("Transacción completada para reserva: nifCliente={}, matricula={}", nifCliente, matricula);
+            LOGGER.debug("Transacción completada para reserva: nifCliente={}, matricula={}", nifCliente, matricula);
 
         } catch (SQLException e) {
 
             // Cualquier excepción primero hacer rollback
             if (con != null) {
                 con.rollback();
-                LOGGER.warn("Rollback ejecutado por excepción: {}", e.getMessage());
             }
 
             // Si es de mi tipo la propago
             if (e instanceof AlquilerCochesException) {
+            	LOGGER.debug("Rollback ejecutado por excepción: {}", e.getMessage());
                 throw (AlquilerCochesException) e;
             }
 
@@ -247,20 +252,23 @@ public class ServicioImpl implements Servicio {
                 }
 
                 // Si se ha entrado en este bloque significa que o el cliente o el coche no existe.
+                AlquilerCochesException ex = null;
                 if (!existeCliente) {
-                    throw new AlquilerCochesException(AlquilerCochesException.CLIENTE_NO_EXIST);
+                    ex = new AlquilerCochesException(AlquilerCochesException.CLIENTE_NO_EXIST);
                 } else {
-                    throw new AlquilerCochesException(AlquilerCochesException.VEHICULO_NO_EXIST);
+                    ex = new AlquilerCochesException(AlquilerCochesException.VEHICULO_NO_EXIST);
                 }
+                LOGGER.debug("Rollback ejecutado por excepción: {}", ex.getMessage());
+                throw ex;
             }
 
-            // Si la excepción es de cualquier otro tipo se guarda en el logger y se propaga
+            // Si la excepción es de cualquier otro tipo, no entra en los ifs anteriores, se guarda en el logger como error y se propaga
             LOGGER.error(e.getMessage(), e);
             throw e;
 
         } finally {
 
-            // Verificamos la no nulidad del cursor y las sentencias preparadas y los cerramos de ser así
+            // Verificamos la no nulidad del cursor y las sentencias preparadas y los cerramos
             if (cursor != null) {
                 cursor.close();
             }
@@ -281,7 +289,7 @@ public class ServicioImpl implements Servicio {
             }
             if (con != null) {
                 con.close();   // Si la conexión existe la cerramos
-                LOGGER.debug("Conexión cerrada finalmente");
+                LOGGER.debug("Conexión cerrada correctamente");
             }
         }
     }
