@@ -55,6 +55,7 @@ public class ServicioImpl implements Servicio {
          */
         PoolDeConexiones pool = PoolDeConexiones.getInstance();
 
+        //Inicializamos las variables que vamos a utilizar. En este caso emplearemo solo un ResultSet que irá cambiando de contenido
         Connection con = null;
         PreparedStatement selDisponible = null;
         PreparedStatement insReserva = null;
@@ -63,6 +64,7 @@ public class ServicioImpl implements Servicio {
         PreparedStatement insLineaFactura = null;
         ResultSet cursor = null;
 
+        //Se envuelve todo el proceso en un try-catch para gestinoar de forma correcta las excepciones producidas
         try {
         
             //El cálculo de los días se da hecho. Se ha incluido tambíen dentro del try-catch
@@ -71,7 +73,7 @@ public class ServicioImpl implements Servicio {
             // Emplearé esta variable para tener siempre la fecha final correcta, tanto si es nula como si no
             Date fechaFinAux = null;
 
-            //Si la fecha de inicio no es nula, calculamos la diferencia de días, si fuera menor que 1, lanzamos excepción
+            //Si la fecha de fin no es nula, calculamos la diferencia de días de la reserva, si fuera menor que 1, lanzamos excepción
             if (fechaFin != null) {
                 fechaFinAux = fechaFin;
                 diasDiff = TimeUnit.MILLISECONDS.toDays(fechaFin.getTime() - fechaIni.getTime());
@@ -116,7 +118,9 @@ public class ServicioImpl implements Servicio {
             while (cursor.next()) {
                 fechaIniReservado = cursor.getDate("fecha_ini");
                 fechaFinReservado = cursor.getDate("fecha_fin");
-                if (fechaFinReservado == null) {
+                //Tal y como dice en los apuntes, empleamos wasNull() para evualuar la nulidad del contenido de dicha columna en la tabla
+                //No hace falta ya que la fecha no es un tipo primitivo, si embargo, en los apuntes se recomienda hacer de esta forma
+                if (cursor.wasNull()) {
                     fechaFinReservado = new Date(fechaIniReservado.getTime()
                           + TimeUnit.DAYS.toMillis(DIAS_DE_ALQUILER));
                 }
