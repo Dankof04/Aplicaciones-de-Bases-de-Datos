@@ -16,6 +16,17 @@ import lsi.ubu.util.PoolDeConexiones;
 import lsi.ubu.util.exceptions.SGBDError;
 import lsi.ubu.util.exceptions.oracle.OracleSGBDErrorUtil;
 
+/**
+ * ServicioImpl: Implementa el procedimiento para realizar el alquiler correspondiente controlando las excepciones
+ * indicadas en el enunciado de la práctica.				
+ * 
+ * @author <a href="mailto:adi1004@alu.ubu.es">Aaron del Santo Izquierdo</a>
+ * @author <a href="mailto:dmm1017@alu.ubu.es">Daniel Miguel Muiña</a>
+ * @author <a href="mailto:nvo1001@alu.ubu.es">Nicolás Villanueva Ortega</a>
+ * @version 2.0
+ * @since 1.0
+ */
+
 public class ServicioImpl implements Servicio {
     private static final Logger LOGGER = LoggerFactory.getLogger(ServicioImpl.class);
 
@@ -32,6 +43,10 @@ public class ServicioImpl implements Servicio {
          * Debido a esto, en el test voy a cambiar el nif del cliente, por uno existente, para que sea 
          * exclusivamente el test de vehículo inexistente.
          * Este problema ya se comentó en el foro.
+         * 
+         * Durente la práctica hemos empleado el logger para indicar distintos tipos de mensajes, warnings, 
+         * errores o simplemente información de la ejecución. Es una herramienta muy útil para controlar la
+         * ejecucion de nuestra aplicación java
          */
         PoolDeConexiones pool = PoolDeConexiones.getInstance();
 
@@ -108,7 +123,7 @@ public class ServicioImpl implements Servicio {
                 }
             }
             cursor.close();
-            LOGGER.debug("Disponibilidad comprobada para matricula={}", matricula);
+            LOGGER.debug("Disponibilidad comprobada para vehículo con matricula={}", matricula);
 
             /* -------------------------------------------------------------------------------------------------------
              * Una vez gestionada la principal excepción (vehículo ocupado) y ya que las demás son violaciones de claves 
@@ -120,14 +135,17 @@ public class ServicioImpl implements Servicio {
                 "VALUES (seq_reservas.nextval, ?, ?, ?, ?)");
             insReserva.setString(1, nifCliente);
             insReserva.setString(2, matricula);
+            
             // Para insertarlo en la tabla tengo que convertir las fechas de util.Date a sql.Date
             insReserva.setDate(3, new java.sql.Date(fechaIni.getTime()));
+            
             // Como fechaFin puede ser null, empleo un operador ternario para gestionar dicha posibilidad
             // Si fechaFin es nula, la fecha en sql tendrá ese mismo valor, sino se realiza la conversión
             java.sql.Date sqlfechaFin = (fechaFin == null
                 ? null
                 : new java.sql.Date(fechaFin.getTime()));
             insReserva.setDate(4, sqlfechaFin);
+            
             // Por último realizo la inserción en la tabla reservas
             insReserva.executeUpdate();
             LOGGER.debug("Reserva insertada para nifCliente={}, matricula={}", nifCliente, matricula);
@@ -182,10 +200,12 @@ public class ServicioImpl implements Servicio {
             insLineaFactura = con.prepareStatement(
                 "INSERT INTO lineas_factura (nroFactura, concepto, importe) " +
                 "VALUES (seq_num_fact.currval, ?, ?)");
+            
             // Primero inserto el coste del modelo del coche
             insLineaFactura.setString(1, diasDiff + " dias de alquiler, vehiculo modelo " + modelo);
             insLineaFactura.setBigDecimal(2, importeVehiculo);
             insLineaFactura.executeUpdate();
+            
             // Despúes inserto el precio del combustible
             insLineaFactura.setString(1, "Deposito lleno de " + capacidad_depo + " litros de " + nombreCombustible);
             insLineaFactura.setBigDecimal(2, importeFuel);
@@ -240,7 +260,7 @@ public class ServicioImpl implements Servicio {
 
         } finally {
 
-            // Verificamos la no nulidad de los cursores y los cerramos de ser así
+            // Verificamos la no nulidad del cursor y las sentencias preparadas y los cerramos de ser así
             if (cursor != null) {
                 cursor.close();
             }
