@@ -246,12 +246,14 @@ public class ServicioImpl implements Servicio {
 
 		} finally {
 			
+			//Verificamos la no nulidad de los cursores y los cerramos de ser así
+			
 			if (cursor != null) {
 				cursor.close();
 			}
 			
 			if (selDisponible != null) {
-				selDisponible.close();
+				selDisponible.close();	
 			}
 			
 			if (insReserva != null) {
@@ -271,7 +273,7 @@ public class ServicioImpl implements Servicio {
 			}
 			
 			if (con != null) {
-				con.close();
+				con.close();			//Si la conexión existe la cerramos
 			}
 		}
 	}
