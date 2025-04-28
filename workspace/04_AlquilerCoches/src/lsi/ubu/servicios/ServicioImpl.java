@@ -32,7 +32,6 @@ public class ServicioImpl implements Servicio {
 
     private static final int DIAS_DE_ALQUILER = 4;
 
-    @Override
     public void alquilar(String nifCliente, String matricula, Date fechaIni, Date fechaFin) throws SQLException {
 
         /*
